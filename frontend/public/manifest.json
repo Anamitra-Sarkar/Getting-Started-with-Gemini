@@ -1,0 +1,8 @@
+{
+  "name": "Vaelis",
+  "short_name": "Vaelis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f2937"
+}

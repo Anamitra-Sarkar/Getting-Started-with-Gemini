@@ -1,0 +1,27 @@
+from sqlmodel import SQLModel, Field, Relationship
+from typing import List, Optional
+from datetime import datetime
+
+
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True, unique=True)
+    hashed_password: str
+    display_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Conversation(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True)
+    title: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Message(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(index=True)
+    role: str
+    content: str
+    meta: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)

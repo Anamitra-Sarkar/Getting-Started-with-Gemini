@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: vaelis-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    region: oregon
+    buildCommand: ''
+    startCommand: ''
