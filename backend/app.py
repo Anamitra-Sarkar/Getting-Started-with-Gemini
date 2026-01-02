@@ -262,151 +262,151 @@ def list_conversations(user=Depends(firebase_auth_required)):
         return {"conversations": [c.dict() for c in convs.all()]}
 
 
-    # Memories (short-term & long-term)
-    @app.post("/memories")
-    def create_memory(body: dict, user=Depends(firebase_auth_required)):
-        content = body.get("content")
-        if not content:
-            raise HTTPException(status_code=400, detail="content required")
-        long_term = bool(body.get("long_term", False))
-        conv_id = body.get("conversation_id")
-        tags = body.get("tags")
-        with Session(engine) as session:
-                mem = Memory(user_id=user["uid"], conversation_id=conv_id, content=content, long_term=long_term, tags=",".join(tags) if tags else None)
-            session.add(mem)
-            session.commit()
-            session.refresh(mem)
+# Memories (short-term & long-term)
+@app.post("/memories")
+def create_memory(body: dict, user=Depends(firebase_auth_required)):
+    content = body.get("content")
+    if not content:
+        raise HTTPException(status_code=400, detail="content required")
+    long_term = bool(body.get("long_term", False))
+    conv_id = body.get("conversation_id")
+    tags = body.get("tags")
+    with Session(engine) as session:
+        mem = Memory(user_id=user["uid"], conversation_id=conv_id, content=content, long_term=long_term, tags=",".join(tags) if tags else None)
+        session.add(mem)
+        session.commit()
+        session.refresh(mem)
+    return {"memory": mem.dict()}
+
+
+@app.get("/memories")
+def list_memories(long_term: bool = False, user=Depends(firebase_auth_required)):
+    with Session(engine) as session:
+        q = select(Memory).where(Memory.user_id == user["uid"]).where(Memory.long_term == long_term)
+        res = session.exec(q).all()
+        return {"memories": [r.dict() for r in res]}
+
+
+@app.get("/memories/{mem_id}")
+def get_memory(mem_id: int, user=Depends(firebase_auth_required)):
+    with Session(engine) as session:
+        mem = session.get(Memory, mem_id)
+        if not mem or mem.user_id != user["uid"]:
+            raise HTTPException(status_code=404, detail="not found")
         return {"memory": mem.dict()}
 
 
-    @app.get("/memories")
-    def list_memories(long_term: bool = False, user=Depends(firebase_auth_required)):
-        with Session(engine) as session:
-            q = select(Memory).where(Memory.user_id == user["uid"]).where(Memory.long_term == long_term)
-            res = session.exec(q).all()
-            return {"memories": [r.dict() for r in res]}
+@app.put("/memories/{mem_id}")
+def update_memory(mem_id: int, body: dict, user=Depends(firebase_auth_required)):
+    # validate body
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="body must be JSON object")
+    if "content" in body and (not isinstance(body.get("content"), str) or not body.get("content").strip()):
+        raise HTTPException(status_code=400, detail="content must be a non-empty string")
+    if "tags" in body and body.get("tags") is not None and not isinstance(body.get("tags"), list):
+        raise HTTPException(status_code=400, detail="tags must be a list")
+    with Session(engine) as session:
+        mem = session.get(Memory, mem_id)
+        if not mem or mem.user_id != user["uid"]:
+            raise HTTPException(status_code=404, detail="not found")
+        if "content" in body:
+            mem.content = body.get("content").strip()
+        if "visible" in body:
+            mem.visible = bool(body.get("visible"))
+        if "tags" in body:
+            tags = body.get("tags")
+            mem.tags = ",".join(tags) if isinstance(tags, list) else tags
+        mem.updated_at = __import__("datetime").datetime.utcnow()
+        session.add(mem)
+        session.commit()
+        return {"memory": mem.dict()}
 
 
-    @app.get("/memories/{mem_id}")
-    def get_memory(mem_id: int, user=Depends(firebase_auth_required)):
-        with Session(engine) as session:
-            mem = session.get(Memory, mem_id)
-            if not mem or mem.user_id != user["uid"]:
-                raise HTTPException(status_code=404, detail="not found")
-            return {"memory": mem.dict()}
+@app.delete("/memories/{mem_id}")
+def delete_memory(mem_id: int, user=Depends(firebase_auth_required)):
+    with Session(engine) as session:
+        mem = session.get(Memory, mem_id)
+        if not mem or mem.user_id != user["uid"]:
+            raise HTTPException(status_code=404, detail="not found")
+        session.delete(mem)
+        # audit
+        audit = AuditLog(user_id=user["uid"], action="forget_memory", target_type="memory", target_id=mem_id, detail=None)
+        session.add(audit)
+        session.commit()
+        return {"ok": True}
 
 
-    @app.put("/memories/{mem_id}")
-    def update_memory(mem_id: int, body: dict, user=Depends(firebase_auth_required)):
-        # validate body
-        if not isinstance(body, dict):
-            raise HTTPException(status_code=400, detail="body must be JSON object")
-        if "content" in body and (not isinstance(body.get("content"), str) or not body.get("content").strip()):
-            raise HTTPException(status_code=400, detail="content must be a non-empty string")
-        if "tags" in body and body.get("tags") is not None and not isinstance(body.get("tags"), list):
-            raise HTTPException(status_code=400, detail="tags must be a list")
-        with Session(engine) as session:
-                mem = session.get(Memory, mem_id)
-                if not mem or mem.user_id != user["uid"]:
-                    raise HTTPException(status_code=404, detail="not found")
-                if "content" in body:
-                    mem.content = body.get("content").strip()
-                if "visible" in body:
-                    mem.visible = bool(body.get("visible"))
-                if "tags" in body:
-                    tags = body.get("tags")
-                    mem.tags = ",".join(tags) if isinstance(tags, list) else tags
-                mem.updated_at = __import__("datetime").datetime.utcnow()
-                session.add(mem)
-                session.commit()
-                return {"memory": mem.dict()}
+# Projects
+@app.post("/projects")
+def create_project(body: dict, user=Depends(firebase_auth_required)):
+    vals = validate_project_payload(body)
+    with Session(engine) as session:
+        p = Project(user_id=user["uid"], name=vals["name"], description=vals.get("description"))
+        session.add(p)
+        session.commit()
+        session.refresh(p)
+        return {"project": p.dict()}
 
 
-    @app.delete("/memories/{mem_id}")
-    def delete_memory(mem_id: int, user=Depends(firebase_auth_required)):
-        with Session(engine) as session:
-            mem = session.get(Memory, mem_id)
-            if not mem or mem.user_id != user["uid"]:
-                raise HTTPException(status_code=404, detail="not found")
-            session.delete(mem)
-            # audit
-            audit = AuditLog(user_id=user["uid"], action="forget_memory", target_type="memory", target_id=mem_id, detail=None)
-            session.add(audit)
-            session.commit()
-            return {"ok": True}
+@app.get("/projects")
+def list_projects(user=Depends(firebase_auth_required)):
+    with Session(engine) as session:
+        res = session.exec(select(Project).where(Project.user_id == user["uid"]))
+        return {"projects": [r.dict() for r in res.all()]}
 
 
-    # Projects
-    @app.post("/projects")
-    def create_project(body: dict, user=Depends(firebase_auth_required)):
-        vals = validate_project_payload(body)
-        with Session(engine) as session:
-            p = Project(user_id=user["uid"], name=vals["name"], description=vals.get("description"))
-            session.add(p)
-            session.commit()
-            session.refresh(p)
-            return {"project": p.dict()}
+# Tasks
+@app.post("/tasks")
+def create_task(body: dict, user=Depends(firebase_auth_required)):
+    vals = validate_task_payload(body)
+    with Session(engine) as session:
+        t = Task(user_id=user["uid"], project_id=vals.get("project_id"), title=vals["title"], description=vals.get("description"), status=vals.get("status", "todo"))
+        session.add(t)
+        session.commit()
+        session.refresh(t)
+        return {"task": t.dict()}
 
 
-    @app.get("/projects")
-    def list_projects(user=Depends(firebase_auth_required)):
-        with Session(engine) as session:
-            res = session.exec(select(Project).where(Project.user_id == user["uid"]))
-            return {"projects": [r.dict() for r in res.all()]}
+@app.get("/tasks")
+def list_tasks(project_id: int = None, user=Depends(firebase_auth_required)):
+    with Session(engine) as session:
+        q = select(Task).where(Task.user_id == user["uid"])
+        if project_id:
+            q = q.where(Task.project_id == project_id)
+        res = session.exec(q).all()
+        return {"tasks": [r.dict() for r in res]}
 
 
-    # Tasks
-    @app.post("/tasks")
-    def create_task(body: dict, user=Depends(firebase_auth_required)):
-        vals = validate_task_payload(body)
-        with Session(engine) as session:
-            t = Task(user_id=user["uid"], project_id=vals.get("project_id"), title=vals["title"], description=vals.get("description"), status=vals.get("status", "todo"))
-            session.add(t)
-            session.commit()
-            session.refresh(t)
-            return {"task": t.dict()}
+# Prompt chains (scaffold)
+@app.post("/chains")
+def create_chain(body: dict, user=Depends(firebase_auth_required)):
+    name = body.get("name")
+    if not name:
+        raise HTTPException(status_code=400, detail="name required")
+    definition = body.get("definition")
+    with Session(engine) as session:
+        c = PromptChain(user_id=user["uid"], name=name, definition=definition)
+        session.add(c)
+        session.commit()
+        session.refresh(c)
+        return {"chain": c.dict()}
 
 
-    @app.get("/tasks")
-    def list_tasks(project_id: int = None, user=Depends(firebase_auth_required)):
-        with Session(engine) as session:
-            q = select(Task).where(Task.user_id == user["uid"])
-            if project_id:
-                q = q.where(Task.project_id == project_id)
-            res = session.exec(q).all()
-            return {"tasks": [r.dict() for r in res]}
+@app.get("/chains")
+def list_chains(user=Depends(firebase_auth_required)):
+    with Session(engine) as session:
+        res = session.exec(select(PromptChain).where(PromptChain.user_id == user["uid"]))
+        return {"chains": [r.dict() for r in res.all()]}
 
 
-    # Prompt chains (scaffold)
-    @app.post("/chains")
-    def create_chain(body: dict, user=Depends(firebase_auth_required)):
-        name = body.get("name")
-        if not name:
-            raise HTTPException(status_code=400, detail="name required")
-        definition = body.get("definition")
-        with Session(engine) as session:
-            c = PromptChain(user_id=user["uid"], name=name, definition=definition)
-            session.add(c)
-            session.commit()
-            session.refresh(c)
-            return {"chain": c.dict()}
-
-
-    @app.get("/chains")
-    def list_chains(user=Depends(firebase_auth_required)):
-        with Session(engine) as session:
-            res = session.exec(select(PromptChain).where(PromptChain.user_id == user["uid"]))
-            return {"chains": [r.dict() for r in res.all()]}
-
-
-    @app.post("/chains/{chain_id}/run")
-    async def run_chain(chain_id: int, body: dict = {}, user=Depends(firebase_auth_required)):
-        # Minimal runner stub: returns queued response; full runner implementation is out of scope for Phase 1
-        with Session(engine) as session:
-            chain = session.get(PromptChain, chain_id)
-            if not chain or chain.user_id != user["uid"]:
-                raise HTTPException(status_code=404, detail="not found")
-        return {"status": "queued", "chain_id": chain_id}
+@app.post("/chains/{chain_id}/run")
+async def run_chain(chain_id: int, body: dict = {}, user=Depends(firebase_auth_required)):
+    # Minimal runner stub: returns queued response; full runner implementation is out of scope for Phase 1
+    with Session(engine) as session:
+        chain = session.get(PromptChain, chain_id)
+        if not chain or chain.user_id != user["uid"]:
+            raise HTTPException(status_code=404, detail="not found")
+    return {"status": "queued", "chain_id": chain_id}
 
 
 @app.get("/conversations/{conv_id}")
