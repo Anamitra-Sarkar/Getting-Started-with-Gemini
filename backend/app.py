@@ -16,6 +16,17 @@ from .routes.feature_flags import router as flags_router
 from .plugins import sdk as plugin_sdk
 from .routes.account import router as account_router
 from .routes.assets import router as assets_router
+from .routes.agents import router as agents_router
+from .routes.tools import router as tools_router
+from .routes.intelligence import router as intelligence_router
+from .routes.markets import router as markets_router
+from .routes.health import router as health_router
+from .routes.education import router as education_router
+from .routes.business import router as business_router
+from .routes.personal import router as personal_router
+from .routes.security import router as security_router
+from .routes.web import router as web_router
+from .routes.admin import router as admin_router
 from sqlmodel import SQLModel, create_engine, Session, select
 from .auth.firebase import verify_firebase_token, firebase_auth_required
 from .ai.service import ai_service
@@ -66,6 +77,19 @@ app.include_router(safety_router)
 app.include_router(flags_router)
 app.include_router(account_router)
 app.include_router(assets_router)
+app.include_router(admin_router)
+
+# include feature routers
+app.include_router(agents_router)
+app.include_router(tools_router)
+app.include_router(intelligence_router)
+app.include_router(markets_router)
+app.include_router(health_router)
+app.include_router(education_router)
+app.include_router(business_router)
+app.include_router(personal_router)
+app.include_router(security_router)
+app.include_router(web_router)
 
 # security headers
 app.add_middleware(SecurityHeadersMiddleware)
