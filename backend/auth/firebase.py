@@ -1,6 +1,7 @@
 import os
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, Request
+import jwt
 
 try:
     import firebase_admin
@@ -15,6 +16,10 @@ _initialized = False
 # simple in-memory cache for verified tokens: token -> (decoded, ts)
 _TOKEN_CACHE: Dict[str, Dict[str, Any]] = {}
 _TOKEN_TTL = int(os.getenv("FIREBASE_TOKEN_CACHE_TTL", "60"))
+
+# JWT settings for simple auth
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+ALGORITHM = "HS256"
 
 
 def init_firebase():
@@ -70,8 +75,18 @@ def verify_firebase_token(id_token: str) -> Dict[str, Any]:
 
 
 def firebase_auth_required(request: Request):
+    """Unified auth dependency that supports both Firebase and JWT tokens"""
     auth = request.headers.get("Authorization")
     if not auth or not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header missing")
     token = auth.split(" ", 1)[1]
+    
+    # First try JWT (simple auth)
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return decoded
+    except jwt.InvalidTokenError:
+        pass  # Try Firebase next
+    
+    # Try Firebase token
     return verify_firebase_token(token)

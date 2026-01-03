@@ -10,6 +10,36 @@ import json
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 
+@router.get("/stats")
+def get_stats(user=Depends(firebase_auth_required)):
+    """Get dashboard statistics for the current user"""
+    with Session(engine) as session:
+        # Count agents
+        agents_count = session.exec(
+            select(Agent).where(Agent.user_id == user["uid"])
+        ).all()
+        agents = len(agents_count)
+        
+        # Count runs
+        runs_count = session.exec(
+            select(AgentRun).where(AgentRun.user_id == user["uid"])
+        ).all()
+        runs = len(runs_count)
+        
+        # Get tool count from tools router (20 is default)
+        tools = 20
+        
+        # Calculate intelligence score based on activity
+        intelligence_score = min(100, 50 + (agents * 5) + (runs * 2))
+        
+        return {
+            "agents": agents,
+            "runs": runs,
+            "tools": tools,
+            "intelligence_score": intelligence_score
+        }
+
+
 class AgentCreate(BaseModel):
     name: str
     description: Optional[str] = None

@@ -19,6 +19,7 @@ from .routes.document import router as document_router
 from .routes.research import router as research_router
 from .routes.safety import router as safety_router
 from .routes.feature_flags import router as flags_router
+from .routes.auth import router as auth_router
 from .plugins import sdk as plugin_sdk
 from .routes.account import router as account_router
 from .routes.assets import router as assets_router
@@ -76,6 +77,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
     return fastapi.responses.JSONResponse(status_code=500, content=payload)
 
 # include scaffolding routers
+app.include_router(auth_router)
 app.include_router(devtools_router)
 app.include_router(document_router)
 app.include_router(research_router)
