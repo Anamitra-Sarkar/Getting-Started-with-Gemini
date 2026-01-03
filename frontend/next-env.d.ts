@@ -1,7 +1,5 @@
 /// <reference types="next" />
-/// <reference types="next/types/global" />
 /// <reference types="next/image-types/global" />
 
-// NOTE: This file should be included in tsconfig.json
-
-declare module '*.css'
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.

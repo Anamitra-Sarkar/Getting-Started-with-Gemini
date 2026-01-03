@@ -29,7 +29,7 @@ class AIService:
             raise RuntimeError("GEMINI_API_KEY not configured")
         headers = {"Authorization": f"Bearer {self.gemini_key}", "Content-Type": "application/json"}
         body = {
-            "model": "gemini-3-pro-preview",
+            "model": "gemini-2.0-flash",
             "mode": mode,
             "prompt": prompt,
             "context": context or []
@@ -54,7 +54,7 @@ class AIService:
             raise RuntimeError("GEMINI_API_KEY not configured")
         headers = {"Authorization": f"Bearer {self.gemini_key}"}
         files = {"image": ("upload.jpg", image_bytes, "image/jpeg")}
-        data = {"instruction": instruction, "model": "gemini-3-pro-preview"}
+        data = {"instruction": instruction, "model": "gemini-2.0-flash"}
         async with httpx.AsyncClient(timeout=60.0) as client:
             r = await client.post(f"{self.gemini_url}/vision:analyze", headers=headers, data=data, files=files)
             r.raise_for_status()

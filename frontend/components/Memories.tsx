@@ -13,7 +13,7 @@ export default function Memories() {
       setMemories(res.memories || [])
     } catch (e) {
       console.error(e)
-      toast.show('error', 'Failed to load memories')
+      // Silently fail if backend not available
     }
   }
 

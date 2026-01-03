@@ -19,7 +19,7 @@ class AIService:
             raise RuntimeError("AI API key not configured")
         headers = {"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
         body = {
-            "model": "gemini-3-pro-preview",
+            "model": "gemini-2.0-flash",
             "mode": mode,
             "prompt": prompt,
             "sources": sources or [],

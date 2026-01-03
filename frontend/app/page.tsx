@@ -1,3 +1,4 @@
+"use client"
 import ChatWorkspace from '../components/ChatWorkspace'
 import Composer from '../components/Composer'
 import { useState } from 'react'

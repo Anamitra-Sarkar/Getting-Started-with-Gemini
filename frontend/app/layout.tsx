@@ -1,4 +1,4 @@
-import './globals.css'
+import '../styles/globals.css'
 import { FirebaseProvider } from '../lib/firebase'
 import { ToastProvider } from '../components/Toast'
 

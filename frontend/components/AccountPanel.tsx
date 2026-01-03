@@ -7,19 +7,29 @@ export default function AccountPanel() {
   const [amount, setAmount] = useState('')
 
   async function load() {
-    const token = await getIdToken()
-    const res = await fetch((process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') + '/account/me', { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
-    if (res.ok) setAccount(await res.json().then(r => r.account))
+    try {
+      const token = await getIdToken()
+      const res = await fetch((process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') + '/account/me', { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
+      if (res.ok) setAccount(await res.json().then(r => r.account))
+    } catch (e) {
+      console.error(e)
+      // Silently fail if backend not available
+    }
   }
 
   useEffect(() => { load() }, [])
 
   async function add() {
-    const token = await getIdToken()
-    const res = await fetch((process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') + '/account/credits/add', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ amount: Number(amount) }) })
-    if (res.ok) {
-      setAmount('')
-      await load()
+    try {
+      const token = await getIdToken()
+      const res = await fetch((process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') + '/account/credits/add', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ amount: Number(amount) }) })
+      if (res.ok) {
+        setAmount('')
+        await load()
+      }
+    } catch (e) {
+      console.error(e)
+      // Silently fail if backend not available
     }
   }
 
