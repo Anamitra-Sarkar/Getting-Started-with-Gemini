@@ -6,6 +6,11 @@ import asyncio
 import json
 import httpx
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local dev)
+# Production deployments should use platform environment variables
+load_dotenv()
 from .utils.security import SecurityHeadersMiddleware
 from .observability import logger as obs_logger, setup_logging
 from .routes.devtools import router as devtools_router

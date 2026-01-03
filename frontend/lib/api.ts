@@ -1,6 +1,5 @@
 import { auth } from './firebase'
-
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+import { API_BASE } from './apiClient'
 
 // Helper to get Firebase ID token
 export async function getIdToken(): Promise<string | null> {
