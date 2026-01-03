@@ -4,7 +4,7 @@ In production, Firebase authentication should be used.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import jwt
 import os
 from sqlmodel import Session, select
@@ -16,6 +16,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
+# Development password - change in production
+DEV_PASSWORD = os.getenv("DEV_AUTH_PASSWORD", "devpass123")
 
 
 class LoginRequest(BaseModel):
@@ -37,7 +39,7 @@ class AuthResponse(BaseModel):
 def create_access_token(data: dict):
     """Create JWT token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -95,8 +97,10 @@ def login(body: LoginRequest):
         if not account:
             raise HTTPException(status_code=401, detail="Invalid email or password")
         
-        # In production, verify password hash here
-        # For development, we accept any password for existing users
+        # Verify password - in development, use DEV_PASSWORD
+        # In production, this should verify against a password hash
+        if body.password != DEV_PASSWORD:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         
         # Create token
         token = create_access_token({
