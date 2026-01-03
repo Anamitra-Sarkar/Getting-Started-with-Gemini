@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { listMemories, deleteMemory } from '../lib/api'
+import { listMemories, deleteMemory } from '@/lib/api'
 import { useToast } from './Toast'
 
 export default function DataControlCenter() {

@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { createMemory, listMemories, updateMemory, deleteMemory } from '../lib/api'
+import { createMemory, listMemories, updateMemory, deleteMemory } from '@/lib/api'
 import { useToast } from './Toast'
 
 export default function Memories() {

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { createDocument } from '../lib/api'
+import { createDocument } from '@/lib/api'
 import { useToast } from './Toast'
 
 export default function DocumentStudio() {

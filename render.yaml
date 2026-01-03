@@ -1,9 +1,12 @@
 services:
   - type: web
     name: vaelis-backend
-    env: docker
-    dockerfilePath: backend/Dockerfile
+    env: python
     plan: free
     region: oregon
-    buildCommand: ''
-    startCommand: ''
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHONPATH
+        value: .
+

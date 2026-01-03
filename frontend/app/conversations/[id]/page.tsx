@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react'
 import ChatWindow from '../../../components/ChatWindow'
+import { getIdToken } from '@/lib/api'
 
 export default function ConversationPage({ params }: { params: { id: string } }) {
   const id = parseInt(params.id, 10)
@@ -13,7 +14,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         <h2 className="text-lg font-semibold">Conversation {id}</h2>
         <div className="flex gap-2 mt-2">
           <button onClick={async ()=>{
-            const token = await (await import('../../../lib/api')).getIdToken()
+            const token = await getIdToken()
             await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${id}/pin`, {
               method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ pinned: true })
             })
@@ -25,7 +26,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
                 <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="comma,separated,tags" className="border p-2 rounded w-full" />
                 <div className="flex gap-2 mt-2">
                   <button onClick={async () => {
-                    const token = await (await import('../../../lib/api')).getIdToken()
+                    const token = await getIdToken()
                     await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${id}/tags`, {
                       method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ tags: tagInput.split(',').map(s=>s.trim()).filter(Boolean) })
                     })
@@ -37,7 +38,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
             )}
           </div>
           <button onClick={async ()=>{
-            const token = await (await import('../../../lib/api')).getIdToken()
+            const token = await getIdToken()
             const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${id}/generate_title`, { method: 'POST', headers: { ...(token?{Authorization:`Bearer ${token}`}:{}) } })
             if (res.ok) {
               const j = await res.json()

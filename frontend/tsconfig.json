@@ -17,6 +17,10 @@
     "noEmit": true,
     "strict": true,
     "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/lib/*": ["lib/*"]
+    },
     "plugins": [
       {
         "name": "next"

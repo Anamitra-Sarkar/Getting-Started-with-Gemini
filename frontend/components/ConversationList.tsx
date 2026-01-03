@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { getIdToken } from '../lib/api'
+import { getIdToken } from '@/lib/api'
 
 export default function ConversationList({ onSelect }: { onSelect?: (id: number) => void }) {
   const [items, setItems] = useState<Array<{ id: number; title: string }>>([])

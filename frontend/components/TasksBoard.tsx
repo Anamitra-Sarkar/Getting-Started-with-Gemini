@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { createTask, listTasks } from '../lib/api'
+import { createTask, listTasks } from '@/lib/api'
 import { useToast } from './Toast'
 
 export default function TasksBoard() {

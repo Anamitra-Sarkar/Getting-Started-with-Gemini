@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { createChain, listChains, runChain } from '../lib/api'
+import { createChain, listChains, runChain } from '@/lib/api'
 import { useToast } from './Toast'
 
 export default function Chains() {

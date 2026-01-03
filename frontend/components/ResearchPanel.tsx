@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { tavilySearch, inspectCitation } from '../lib/api'
+import { tavilySearch, inspectCitation } from '@/lib/api'
 
 export default function ResearchPanel() {
   const [query, setQuery] = useState('')

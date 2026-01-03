@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { getIdToken } from '../lib/api'
+import { getIdToken } from '@/lib/api'
 
 export default function AccountPanel() {
   const [account, setAccount] = useState<any>(null)

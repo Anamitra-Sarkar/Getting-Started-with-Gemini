@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { createProject, listProjects } from '../lib/api'
+import { createProject, listProjects } from '@/lib/api'
 import { useToast } from './Toast'
 
 export default function Projects() {

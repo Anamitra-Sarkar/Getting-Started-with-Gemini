@@ -45,7 +45,7 @@ const Sidebar: React.FC = () => {
   const toggleTool = (k: string) => {
     const next = { ...tools, [k]: !((tools as any)[k]) }
     setTools(next)
-    toast.show('info', `${k} ${next[k] ? 'enabled' : 'disabled'}`)
+    toast.show('info', `${k} ${(next as any)[k] ? 'enabled' : 'disabled'}`)
   }
 
   const toggleCategory = (id: string) => {
