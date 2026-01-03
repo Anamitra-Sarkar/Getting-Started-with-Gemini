@@ -3,30 +3,13 @@ import React, { useState, useEffect } from 'react'
 import { useToast } from './Toast'
 
 const DEFAULT_TOOLS = {
-  image: true,
-  video: true,
   search: true,
   agents: false,
 }
 
-const FEATURE_CATEGORIES = [
-  { id: 'intelligence', name: 'Intelligence', icon: '🧠', features: ['Intent Detection', 'Bias Detection', 'Decision Analysis'] },
-  { id: 'agents', name: 'Agents', icon: '🤖', features: ['Create Agent', 'Manage Agents', 'Agent Memory'] },
-  { id: 'tools', name: 'Tools', icon: '🔧', features: ['Tool Manager', 'Tool Permissions', 'Tool Health'] },
-  { id: 'web', name: 'Web & News', icon: '🌐', features: ['Web Search', 'Credibility Check', 'Fact Check', 'News Heatmap'] },
-  { id: 'markets', name: 'Markets', icon: '📈', features: ['Earnings Analysis', 'Portfolio Analysis', 'Crypto Risk'] },
-  { id: 'health', name: 'Health', icon: '💪', features: ['Wellness', 'Nutrition', 'Fitness', 'Longevity'] },
-  { id: 'education', name: 'Education', icon: '📚', features: ['Learning Gaps', 'Resume Analysis', 'Career Path'] },
-  { id: 'business', name: 'Business', icon: '💼', features: ['Market Sizing', 'SWOT', 'GTM Planning', 'Pricing'] },
-  { id: 'personal', name: 'Personal OS', icon: '🎯', features: ['Goals', 'Life Simulation', 'Regret Minimization'] },
-  { id: 'security', name: 'Security', icon: '🔒', features: ['Trust Score', 'Privacy', 'Compliance'] },
-]
-
 const Sidebar: React.FC = () => {
   const [mode, setMode] = useState('Chat')
   const [tools, setTools] = useState(DEFAULT_TOOLS)
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const [view, setView] = useState<'main' | 'features'>('main')
   const toast = useToast()
 
   useEffect(() => {
@@ -48,143 +31,65 @@ const Sidebar: React.FC = () => {
     toast.show('info', `${k} ${(next as any)[k] ? 'enabled' : 'disabled'}`)
   }
 
-  const toggleCategory = (id: string) => {
-    setExpanded(expanded === id ? null : id)
-  }
-
   return (
-    <div className="space-y-4 p-3 h-full overflow-y-auto">
-      <div className="text-xl font-bold text-blue-600">Vaelis AI</div>
+    <div className="space-y-6 p-4 h-full overflow-y-auto">
+      <div className="text-lg font-medium text-neutral-700 dark:text-neutral-300">Vaelis</div>
       
       <button 
-        className="w-full text-left p-2 rounded bg-blue-500 text-white hover:bg-blue-600 font-semibold"
+        className="w-full text-left px-4 py-2.5 rounded-lg bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 font-medium transition-colors"
         onClick={() => toast.show('info', 'New Chat started')}
       >
         + New Chat
       </button>
 
-      <div className="flex gap-2">
-        <button 
-          className={`flex-1 p-1 text-sm rounded ${view === 'main' ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-          onClick={() => setView('main')}
-        >
-          Main
-        </button>
-        <button 
-          className={`flex-1 p-1 text-sm rounded ${view === 'features' ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
-          onClick={() => setView('features')}
-        >
-          Features
-        </button>
+      <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
+        <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">Mode</div>
+        <ul className="space-y-1">
+          {['Chat','Think','Study','Build'].map(m => (
+            <li 
+              key={m} 
+              className={`px-3 py-2 cursor-pointer rounded-lg transition-colors ${
+                mode===m
+                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-medium'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+              }`} 
+              onClick={() => { setMode(m); toast.show('info', `Mode: ${m}`) }}
+            >
+              {m}
+            </li>
+          ))}
+        </ul>
       </div>
-
-      {view === 'main' ? (
-        <>
-          <div className="border-t pt-2 font-semibold text-sm text-gray-700">Modes</div>
-          <ul className="space-y-1">
-            {['Chat','Think','Study','Build','Analyze'].map(m => (
-              <li 
-                key={m} 
-                className={`p-2 cursor-pointer rounded ${mode===m? 'bg-blue-100 font-semibold':'hover:bg-gray-100'}`} 
-                onClick={() => { setMode(m); toast.show('info', `Mode: ${m}`) }}
-              >
-                {m}
-              </li>
-            ))}
-          </ul>
-          
-          <div className="border-t pt-2 font-semibold text-sm text-gray-700">Core Tools</div>
-          <ul className="space-y-1">
-            <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-              <div className="flex items-center gap-2">
-                <span>🖼️</span>
-                <span>Nano Banana</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={tools.image} 
-                onChange={() => toggleTool('image')}
-                className="w-4 h-4" 
-              />
-            </li>
-            <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-              <div className="flex items-center gap-2">
-                <span>🎬</span>
-                <span>Veo 3.1</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={tools.video} 
-                onChange={() => toggleTool('video')}
-                className="w-4 h-4" 
-              />
-            </li>
-            <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-              <div className="flex items-center gap-2">
-                <span>🔍</span>
-                <span>Web Search</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={tools.search} 
-                onChange={() => toggleTool('search')}
-                className="w-4 h-4" 
-              />
-            </li>
-            <li className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-              <div className="flex items-center gap-2">
-                <span>🤖</span>
-                <span>Agents</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={tools.agents} 
-                onChange={() => toggleTool('agents')}
-                className="w-4 h-4" 
-              />
-            </li>
-          </ul>
-        </>
-      ) : (
-        <>
-          <div className="border-t pt-2 font-semibold text-sm text-gray-700">
-            400 Features Available
-          </div>
-          <div className="space-y-2">
-            {FEATURE_CATEGORIES.map(category => (
-              <div key={category.id} className="border rounded">
-                <button
-                  className="w-full text-left p-2 hover:bg-gray-50 flex items-center justify-between"
-                  onClick={() => toggleCategory(category.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{category.icon}</span>
-                    <span className="font-medium">{category.name}</span>
-                  </div>
-                  <span>{expanded === category.id ? '▼' : '▶'}</span>
-                </button>
-                {expanded === category.id && (
-                  <ul className="p-2 pt-0 space-y-1 text-sm">
-                    {category.features.map((feature, idx) => (
-                      <li 
-                        key={idx}
-                        className="p-1 hover:bg-gray-100 rounded cursor-pointer text-gray-700"
-                        onClick={() => toast.show('info', `${feature} - Coming to chat soon!`)}
-                      >
-                        • {feature}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          <div className="text-xs text-gray-500 pt-2 border-t">
-            Navigate to any feature category to explore available capabilities.
-          </div>
-        </>
-      )}
+      
+      <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
+        <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-3">Tools</div>
+        <ul className="space-y-2">
+          <li className="flex items-center justify-between px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-lg transition-colors">
+            <div className="flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300">
+              <span className="text-base">🔍</span>
+              <span className="text-sm">Web Search</span>
+            </div>
+            <input 
+              type="checkbox" 
+              checked={tools.search} 
+              onChange={() => toggleTool('search')}
+              className="w-4 h-4 rounded accent-neutral-900 dark:accent-neutral-100" 
+            />
+          </li>
+          <li className="flex items-center justify-between px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-lg transition-colors">
+            <div className="flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300">
+              <span className="text-base">🤖</span>
+              <span className="text-sm">Agents</span>
+            </div>
+            <input 
+              type="checkbox" 
+              checked={tools.agents} 
+              onChange={() => toggleTool('agents')}
+              className="w-4 h-4 rounded accent-neutral-900 dark:accent-neutral-100" 
+            />
+          </li>
+        </ul>
+      </div>
     </div>
   )
 }

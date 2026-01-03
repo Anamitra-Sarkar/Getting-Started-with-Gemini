@@ -1,4 +1,10 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local dev)
+# Production deployments should use platform environment variables
+load_dotenv()
+
 import logging
 from fastapi import FastAPI, Depends, HTTPException, Request
 import fastapi

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from './Toast'
 import { exportMarkdown, getIdToken } from '@/lib/api'
+import { API_BASE } from '@/lib/apiClient'
 
 type ConvMeta = { id?: number; pinned?: boolean; tags?: string; title?: string }
 
@@ -16,7 +17,7 @@ export default function ChatWindow({ convId }: { convId?: number }) {
       if (!convId) return
       try {
         const token = await getIdToken()
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${convId}`, {
+        const res = await fetch(`${API_BASE}/conversations/${convId}`, {
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         })
         if (res.ok) {
@@ -44,7 +45,7 @@ export default function ChatWindow({ convId }: { convId?: number }) {
             <button onClick={async () => {
               try {
                 const token = await getIdToken()
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${convId}/pin`, {
+                const res = await fetch(`${API_BASE}/conversations/${convId}/pin`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                   body: JSON.stringify({ pinned: !meta?.pinned })
@@ -73,7 +74,7 @@ export default function ChatWindow({ convId }: { convId?: number }) {
             <button onClick={async () => {
               try {
                 const token = await getIdToken()
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${convId}/generate_title`, {
+                const res = await fetch(`${API_BASE}/conversations/${convId}/generate_title`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
                 })
@@ -96,7 +97,7 @@ export default function ChatWindow({ convId }: { convId?: number }) {
                 <button onClick={async () => {
                   try {
                     const token = await getIdToken()
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/ai/retry`, {
+                    const res = await fetch(`${API_BASE}/ai/retry`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                       body: JSON.stringify({ conv_id: convId, message_id: m.id })
@@ -126,7 +127,7 @@ export default function ChatWindow({ convId }: { convId?: number }) {
               try {
                 const token = await getIdToken()
                 const tags = tagInput.split(',').map(s => s.trim()).filter(Boolean)
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${convId}/tags`, {
+                const res = await fetch(`${API_BASE}/conversations/${convId}/tags`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                   body: JSON.stringify({ tags })
@@ -146,7 +147,7 @@ export default function ChatWindow({ convId }: { convId?: number }) {
           if (ids.length === 0) return
           try {
             const token = await getIdToken()
-            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/export/messages`, {
+            const res = await fetch(`${API_BASE}/export/messages`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
               body: JSON.stringify({ message_ids: ids })

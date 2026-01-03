@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { getIdToken } from '@/lib/api'
+import { API_BASE } from '@/lib/apiClient'
 
 export default function ConversationList({ onSelect }: { onSelect?: (id: number) => void }) {
   const [items, setItems] = useState<Array<{ id: number; title: string }>>([])
@@ -10,7 +11,7 @@ export default function ConversationList({ onSelect }: { onSelect?: (id: number)
     async function load() {
       try {
         const token = await getIdToken()
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations`, {
+        const res = await fetch(`${API_BASE}/conversations`, {
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         })
         if (res.ok) {

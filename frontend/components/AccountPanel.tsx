@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { getIdToken } from '@/lib/api'
+import { API_BASE } from '@/lib/apiClient'
 
 export default function AccountPanel() {
   const [account, setAccount] = useState<any>(null)
@@ -9,7 +10,7 @@ export default function AccountPanel() {
   async function load() {
     try {
       const token = await getIdToken()
-      const res = await fetch((process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') + '/account/me', { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
+      const res = await fetch(`${API_BASE}/account/me`, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } })
       if (res.ok) setAccount(await res.json().then(r => r.account))
     } catch (e) {
       console.error(e)
@@ -22,7 +23,7 @@ export default function AccountPanel() {
   async function add() {
     try {
       const token = await getIdToken()
-      const res = await fetch((process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') + '/account/credits/add', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ amount: Number(amount) }) })
+      const res = await fetch(`${API_BASE}/account/credits/add`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ amount: Number(amount) }) })
       if (res.ok) {
         setAmount('')
         await load()

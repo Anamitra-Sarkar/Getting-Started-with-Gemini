@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import ChatWindow from '../../../components/ChatWindow'
 import { getIdToken } from '@/lib/api'
+import { API_BASE } from '@/lib/apiClient'
 
 export default function ConversationPage({ params }: { params: { id: string } }) {
   const id = parseInt(params.id, 10)
@@ -15,7 +16,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
         <div className="flex gap-2 mt-2">
           <button onClick={async ()=>{
             const token = await getIdToken()
-            await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${id}/pin`, {
+            await fetch(`${API_BASE}/conversations/${id}/pin`, {
               method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ pinned: true })
             })
           }} className="px-3 py-1 bg-yellow-400 rounded">Pin</button>
@@ -27,7 +28,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
                 <div className="flex gap-2 mt-2">
                   <button onClick={async () => {
                     const token = await getIdToken()
-                    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${id}/tags`, {
+                    await fetch(`${API_BASE}/conversations/${id}/tags`, {
                       method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ tags: tagInput.split(',').map(s=>s.trim()).filter(Boolean) })
                     })
                     setShowTags(false)
@@ -39,7 +40,7 @@ export default function ConversationPage({ params }: { params: { id: string } })
           </div>
           <button onClick={async ()=>{
             const token = await getIdToken()
-            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/conversations/${id}/generate_title`, { method: 'POST', headers: { ...(token?{Authorization:`Bearer ${token}`}:{}) } })
+            const res = await fetch(`${API_BASE}/conversations/${id}/generate_title`, { method: 'POST', headers: { ...(token?{Authorization:`Bearer ${token}`}:{}) } })
             if (res.ok) {
               const j = await res.json()
               console.info('Generated title:', j.title)
