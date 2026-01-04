@@ -2,7 +2,17 @@
 
 ## Backend Deployment (Render)
 
-### Configuration Files
+### Deployment Options
+
+Render supports two deployment methods:
+1. **Native Python Environment** (recommended for simplicity)
+2. **Docker Container** (recommended for consistency and containerization)
+
+---
+
+### Option 1: Native Python Deployment (Current Setup)
+
+#### Configuration Files
 
 1. **runtime.txt** (Repository Root)
    - Locks Python version to 3.12.1
@@ -18,10 +28,10 @@
 3. **requirements.txt** (Repository Root)
    - All dependencies pinned to tested versions
    - Critical pins:
-     - `Pillow==10.0.0` (incompatible with Python 3.13)
+     - `Pillow==10.3.0` (incompatible with Python 3.13)
      - `reportlab==3.6.13` (incompatible with Python 3.13)
 
-### Environment Variables (Render Dashboard)
+#### Environment Variables (Render Dashboard)
 
 Required environment variables to set in Render dashboard:
 
@@ -41,9 +51,96 @@ GOOGLE_API_KEY=<your-google-api-key>
 # Optional: Tavily Search API
 TAVILY_API_KEY=<your-tavily-api-key>
 
-# Optional: Database URL (if using external DB)
+# Optional: Database URL (defaults to SQLite in local storage)
+# DATABASE_URL=sqlite:///./backend_data.db
+```
+
+---
+
+### Option 2: Docker Deployment
+
+#### Configuration Files
+
+1. **backend/Dockerfile**
+   - Python 3.12-slim base image
+   - Creates `/app/data` directory for SQLite database with write permissions
+   - Sets `PYTHONPATH=/app` for proper module imports
+   - Default `DATABASE_URL=sqlite:///./data/backend_data.db`
+   - Uses repository root as build context
+
+2. **.dockerignore** (Repository Root)
+   - Excludes frontend, node_modules, tests, and media files from Docker build context
+   - Reduces build time and image size
+
+#### Building Docker Image Locally
+
+```bash
+# From repository root
+docker build -f backend/Dockerfile -t vaelis-backend .
+```
+
+#### Running Docker Container Locally
+
+```bash
+# Run with default settings
+docker run -p 8000:8000 -e PORT=8000 vaelis-backend
+
+# Run with environment variables
+docker run -p 8000:8000 \
+  -e PORT=8000 \
+  -e GOOGLE_API_KEY=your-key \
+  -e FRONTEND_ORIGINS=https://getting-started-with-gemini.vercel.app \
+  -e FIREBASE_PROJECT_ID=your-project-id \
+  -e FIREBASE_PRIVATE_KEY="your-private-key" \
+  -e FIREBASE_CLIENT_EMAIL=your-email@project.iam.gserviceaccount.com \
+  vaelis-backend
+
+# Test health endpoint
+curl http://localhost:8000/health
+# Expected: {"status":"ok"}
+```
+
+#### Docker Deployment on Render
+
+1. Go to Render Dashboard
+2. Create a new **Web Service**
+3. Select **Docker** as the environment
+4. Set **Dockerfile Path**: `backend/Dockerfile`
+5. Set **Docker Build Context Directory**: `.` (repository root)
+6. Configure environment variables (see below)
+
+#### Environment Variables for Docker Deployment (Render)
+
+```
+# Render automatically sets PORT - do not override
+# PORT=10000 (set by Render)
+
+FRONTEND_ORIGINS=https://getting-started-with-gemini.vercel.app
+LOG_LEVEL=info
+
+# Firebase Admin
+FIREBASE_PROJECT_ID=<your-firebase-project-id>
+FIREBASE_PRIVATE_KEY=<your-firebase-private-key>
+FIREBASE_CLIENT_EMAIL=<your-firebase-client-email>
+
+# Google Gemini API
+GOOGLE_API_KEY=<your-google-api-key>
+
+# Optional: Tavily Search API
+TAVILY_API_KEY=<your-tavily-api-key>
+
+# Optional: Database URL (defaults to sqlite:///./data/backend_data.db)
+# For persistent storage, consider using Render Disks or external DB
 # DATABASE_URL=<your-database-url>
 ```
+
+**Important Notes for Docker Deployment:**
+- Render sets the `PORT` environment variable automatically (usually 10000)
+- The Dockerfile is configured to use `$PORT` from environment
+- SQLite database is stored in `/app/data/backend_data.db` inside container
+- For persistent data across deployments, consider:
+  - Using Render Persistent Disks mounted to `/app/data`
+  - Using an external PostgreSQL database (set `DATABASE_URL`)
 
 ### Verification Steps
 
@@ -58,18 +155,44 @@ TAVILY_API_KEY=<your-tavily-api-key>
 
 ### Configuration Files
 
-1. **tsconfig.json** (frontend/)
+1. **vercel.json** (frontend/)
+   - Configures Vercel for Create React App deployment
+   - Sets build output directory to `build`
+   - Configures SPA routing with rewrites to index.html
+   - Disables framework detection (this is CRA, not Next.js)
+
+2. **tsconfig.json** (frontend/)
    - Added path alias: `"@/lib/*": ["lib/*"]`
    - Enables clean imports: `import { api } from '@/lib/api'`
 
-2. **lib/api.ts** (frontend/lib/)
+3. **lib/api.ts** (frontend/lib/)
    - Centralized API client with all backend endpoints
    - Handles authentication via Firebase tokens
    - Uses `NEXT_PUBLIC_API_BASE_URL` environment variable
 
-3. **lib/firebase.tsx** (frontend/lib/)
+4. **lib/firebase.tsx** (frontend/lib/)
    - Firebase authentication setup
    - Context provider for user state
+
+5. **package.json** (frontend/)
+   - `packageManager` field removed to prevent lockfile mismatch
+   - Allows Vercel to auto-detect npm from `package-lock.json`
+   - Prevents yarn/npm conflicts during build
+
+6. **craco.config.js** (frontend/)
+   - Gracefully handles missing plugin modules with try/catch
+   - Provides no-op fallbacks if plugins are not found
+   - Prevents dev server crashes on optional plugins
+
+### Vercel Project Settings
+
+**IMPORTANT**: In the Vercel dashboard, configure the following project settings:
+
+1. **Root Directory**: Set to `frontend` (not the repository root)
+2. **Framework Preset**: Select "Create React App" or "Other"
+3. **Build Command**: `npm run build` (auto-detected from vercel.json)
+4. **Output Directory**: `build` (auto-detected from vercel.json)
+5. **Install Command**: `npm install` or `npm ci`
 
 ### Environment Variables (Vercel Dashboard)
 

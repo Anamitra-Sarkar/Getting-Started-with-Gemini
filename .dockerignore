@@ -1,0 +1,60 @@
+# Git
+.git
+.github
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Frontend
+frontend/
+node_modules/
+
+# Documentation
+*.md
+!README.md
+
+# Media
+*.mp4
+*.avi
+*.mov
+prototype video.mp4
+
+# Database (local dev only)
+*.db
+backend_data.db
+
+# Tests
+tests/
+pytest.ini
+
+# Build artifacts
+dist/
+build/
+*.egg
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Server (if separate from backend)
+server/

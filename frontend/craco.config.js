@@ -17,8 +17,15 @@ let setupDevServer;
 let babelMetadataPlugin;
 
 if (config.enableVisualEdits) {
-  setupDevServer = require("./plugins/visual-edits/dev-server-setup");
-  babelMetadataPlugin = require("./plugins/visual-edits/babel-metadata-plugin");
+  try {
+    setupDevServer = require("./plugins/visual-edits/dev-server-setup");
+    babelMetadataPlugin = require("./plugins/visual-edits/babel-metadata-plugin");
+  } catch (error) {
+    console.warn("Visual edits plugins not found, continuing without them:", error.message);
+    // Provide no-op fallbacks
+    setupDevServer = (config) => config;
+    babelMetadataPlugin = null;
+  }
 }
 
 // Conditionally load health check modules only if enabled
@@ -27,9 +34,16 @@ let setupHealthEndpoints;
 let healthPluginInstance;
 
 if (config.enableHealthCheck) {
-  WebpackHealthPlugin = require("./plugins/health-check/webpack-health-plugin");
-  setupHealthEndpoints = require("./plugins/health-check/health-endpoints");
-  healthPluginInstance = new WebpackHealthPlugin();
+  try {
+    WebpackHealthPlugin = require("./plugins/health-check/webpack-health-plugin");
+    setupHealthEndpoints = require("./plugins/health-check/health-endpoints");
+    healthPluginInstance = new WebpackHealthPlugin();
+  } catch (error) {
+    console.warn("Health check plugins not found, continuing without them:", error.message);
+    // Provide no-op fallbacks
+    healthPluginInstance = null;
+    setupHealthEndpoints = null;
+  }
 }
 
 const webpackConfig = {
