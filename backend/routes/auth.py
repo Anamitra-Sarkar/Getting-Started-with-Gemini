@@ -126,15 +126,33 @@ def login(body: LoginRequest):
 
 @router.post("/google", response_model=AuthResponse)
 def google_auth(body: GoogleAuthRequest):
-    """Google OAuth authentication - simplified for development"""
+    """
+    Google OAuth authentication
+    
+    NOTE: This is a simplified implementation for development.
+    In production, you MUST:
+    1. Verify the Google token using google.oauth2.id_token.verify_oauth2_token
+    2. Extract real user information from the verified token
+    3. Use proper secret management for client secrets
+    
+    For now, this creates a test account for development purposes.
+    """
     try:
-        # In production, you would verify the Google token here
-        # For development, we'll extract a fake email from the token
-        # This is just a placeholder - real implementation would use Google's API
+        # TODO: In production, verify the Google token here:
+        # from google.oauth2 import id_token
+        # from google.auth.transport import requests
+        # idinfo = id_token.verify_oauth2_token(
+        #     body.token, 
+        #     requests.Request(), 
+        #     os.getenv("GOOGLE_CLIENT_ID")
+        # )
+        # google_email = idinfo['email']
+        # google_name = idinfo['name']
         
-        # For development, just create/login user with a Google-based email
-        google_email = "google.user@example.com"  # Placeholder
-        google_name = "Google User"  # Placeholder
+        # For development, use placeholder values
+        # In production, replace with actual verified user data
+        google_email = "google.user@example.com"  # Placeholder - replace with verified email
+        google_name = "Google User"  # Placeholder - replace with verified name
         
         with Session(engine) as session:
             # Check if user exists

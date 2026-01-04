@@ -52,11 +52,11 @@ const Auth = ({ setToken, onClose, isDialog }) => {
         });
         window.google.accounts.id.prompt();
       } else {
-        toast.error("Google Sign-In not available");
+        toast.error("Google Sign-In service is not available. Please refresh the page and try again.");
       }
     } catch (error) {
       console.error("Google Sign-In error:", error);
-      toast.error("Google Sign-In failed");
+      toast.error("Failed to initialize Google Sign-In. Please try again.");
     }
   };
 

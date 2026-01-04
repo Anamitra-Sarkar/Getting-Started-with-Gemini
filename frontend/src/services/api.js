@@ -36,8 +36,8 @@ class APIService {
       return await response.json();
     } catch (error) {
       console.error(`API Error [${endpoint}]:`, error);
-      // Check if it's a network error (server down)
-      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      // Check if it's a network error (server down) - be specific about TypeError
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
         const serverDownError = new Error('Server down');
         serverDownError.isServerDown = true;
         throw serverDownError;
