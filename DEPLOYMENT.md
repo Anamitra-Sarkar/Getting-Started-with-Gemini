@@ -155,28 +155,44 @@ TAVILY_API_KEY=<your-tavily-api-key>
 
 ### Configuration Files
 
-1. **tsconfig.json** (frontend/)
+1. **vercel.json** (frontend/)
+   - Configures Vercel for Create React App deployment
+   - Sets build output directory to `build`
+   - Configures SPA routing with rewrites to index.html
+   - Disables framework detection (this is CRA, not Next.js)
+
+2. **tsconfig.json** (frontend/)
    - Added path alias: `"@/lib/*": ["lib/*"]`
    - Enables clean imports: `import { api } from '@/lib/api'`
 
-2. **lib/api.ts** (frontend/lib/)
+3. **lib/api.ts** (frontend/lib/)
    - Centralized API client with all backend endpoints
    - Handles authentication via Firebase tokens
    - Uses `NEXT_PUBLIC_API_BASE_URL` environment variable
 
-3. **lib/firebase.tsx** (frontend/lib/)
+4. **lib/firebase.tsx** (frontend/lib/)
    - Firebase authentication setup
    - Context provider for user state
 
-4. **package.json** (frontend/)
+5. **package.json** (frontend/)
    - `packageManager` field removed to prevent lockfile mismatch
    - Allows Vercel to auto-detect npm from `package-lock.json`
    - Prevents yarn/npm conflicts during build
 
-5. **craco.config.js** (frontend/)
+6. **craco.config.js** (frontend/)
    - Gracefully handles missing plugin modules with try/catch
    - Provides no-op fallbacks if plugins are not found
    - Prevents dev server crashes on optional plugins
+
+### Vercel Project Settings
+
+**IMPORTANT**: In the Vercel dashboard, configure the following project settings:
+
+1. **Root Directory**: Set to `frontend` (not the repository root)
+2. **Framework Preset**: Select "Create React App" or "Other"
+3. **Build Command**: `npm run build` (auto-detected from vercel.json)
+4. **Output Directory**: `build` (auto-detected from vercel.json)
+5. **Install Command**: `npm install` or `npm ci`
 
 ### Environment Variables (Vercel Dashboard)
 
