@@ -83,33 +83,22 @@ const Auth = ({ setToken, onClose, isDialog }) => {
   };
 
   const content = (
-  const content = (
-    <div
-      className="absolute inset-0 z-0"
-      style={{
-        backgroundImage:
-          "url(https://images.unsplash.com/photo-1595409300508-fa0e6fa98692?crop=entropy&cs=srgb&fm=jpg&q=85)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        opacity: 0.1,
-      }}
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className="relative z-10 w-full max-w-md mx-auto"
+      style={{ marginTop: isDialog ? "5rem" : "0" }}
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="relative z-10 w-full max-w-md mx-auto"
-        style={{ marginTop: isDialog ? "5rem" : "0" }}
-      >
-        <div className="glass-heavy rounded-3xl p-10">
-          {isDialog && (
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
-              data-testid="auth-close-button"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+      <div className="glass-heavy rounded-3xl p-10">
+        {isDialog && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
+            data-testid="auth-close-button"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
           
           <div className="flex items-center justify-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-neon-purple to-neon-cyan rounded-2xl flex items-center justify-center">
@@ -233,7 +222,6 @@ const Auth = ({ setToken, onClose, isDialog }) => {
           </div>
         </div>
       </motion.div>
-    </div>
   );
 
   if (isDialog) {
@@ -246,7 +234,18 @@ const Auth = ({ setToken, onClose, isDialog }) => {
 
   return (
     <div className="min-h-screen bg-void text-white flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage:
+            "url(https://images.unsplash.com/photo-1595409300508-fa0e6fa98692?crop=entropy&cs=srgb&fm=jpg&q=85)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.1,
+        }}
+      />
       {content}
+    </div>
   );
 };
 
