@@ -39,7 +39,7 @@ class AIService:
                 return label_response(text or str(out), sources=sources, raw=out)
         except httpx.HTTPError as e:
             return {
-                "output": f"AI service temporarily unavailable. Please try again later.",
+                "output": "AI service temporarily unavailable. Please try again later.",
                 "error": "service_error",
                 "status": "error",
                 "details": str(e)

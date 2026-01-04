@@ -1,14 +1,17 @@
 """Test AI service error handling"""
 import pytest
+import os
 from backend.ai.service import AIService
 
 
 @pytest.mark.asyncio
-async def test_ai_service_without_api_key():
+async def test_ai_service_without_api_key(monkeypatch):
     """Test that AI service returns error response when API key is not configured"""
+    # Ensure API key is not set
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    
     # Create service without API key
     service = AIService()
-    service.key = None
     
     # Call generate
     result = await service.generate(prompt="test prompt", mode="chat")
