@@ -5,7 +5,7 @@ import apiService from "../services/api";
 import { Plus, Play, Pause, Trash2, Clock, Brain } from "lucide-react";
 import { toast } from "sonner";
 
-const Agents = ({ user, logout, token }) => {
+const Agents = ({ user, logout, token, openAuthDialog }) => {
   const [agents, setAgents] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,6 +25,9 @@ const Agents = ({ user, logout, token }) => {
       const data = await apiService.getAgents();
       setAgents(data.agents || data);
     } catch (error) {
+      if (error.isServerDown) {
+        toast.error("Server down");
+      }
       console.error("Failed to fetch agents", error);
     }
   };
@@ -44,7 +47,11 @@ const Agents = ({ user, logout, token }) => {
         memory_scope: "conversation",
       });
     } catch (error) {
-      toast.error(error.message || "Failed to create agent");
+      if (error.isServerDown) {
+        toast.error("Server down");
+      } else {
+        toast.error(error.message || "Failed to create agent");
+      }
     }
   };
 
@@ -60,7 +67,7 @@ const Agents = ({ user, logout, token }) => {
 
   return (
     <div className="flex min-h-screen bg-void text-white">
-      <Sidebar user={user} logout={logout} />
+      <Sidebar user={user} logout={logout} openAuthDialog={openAuthDialog} />
 
       <div className="flex-1 p-8">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>

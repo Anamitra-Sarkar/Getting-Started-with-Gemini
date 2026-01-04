@@ -9,9 +9,10 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  User,
 } from "lucide-react";
 
-const Sidebar = ({ user, logout }) => {
+const Sidebar = ({ user, logout, openAuthDialog }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -76,20 +77,33 @@ const Sidebar = ({ user, logout }) => {
       </nav>
 
       <div className="p-4 border-t border-white/10">
-        {!collapsed && user && (
-          <div className="mb-3 p-3 glass-light rounded-xl">
-            <div className="body-font text-sm text-gray-300">{user.name}</div>
-            <div className="code-font text-gray-500">{user.email}</div>
-          </div>
+        {user ? (
+          <>
+            {!collapsed && (
+              <div className="mb-3 p-3 glass-light rounded-xl">
+                <div className="body-font text-sm text-gray-300">{user.name}</div>
+                <div className="code-font text-xs text-gray-500">{user.email}</div>
+              </div>
+            )}
+            <button
+              onClick={logout}
+              data-testid="sidebar-logout"
+              className="w-full flex items-center gap-3 p-3 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors"
+            >
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && <span className="body-font">Logout</span>}
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={openAuthDialog}
+            data-testid="sidebar-login"
+            className="w-full flex items-center gap-3 p-3 bg-neon-purple hover:bg-neon-cyan text-white rounded-xl transition-colors"
+          >
+            <User className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span className="body-font">Login</span>}
+          </button>
         )}
-        <button
-          onClick={logout}
-          data-testid="sidebar-logout"
-          className="w-full flex items-center gap-3 p-3 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors"
-        >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="body-font">Logout</span>}
-        </button>
       </div>
     </div>
   );

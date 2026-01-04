@@ -5,7 +5,7 @@ import apiService from "../services/api";
 import * as Icons from "lucide-react";
 import { toast } from "sonner";
 
-const Tools = ({ user, logout, token }) => {
+const Tools = ({ user, logout, token, openAuthDialog }) => {
   const [tools, setTools] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTool, setSelectedTool] = useState(null);
@@ -21,6 +21,9 @@ const Tools = ({ user, logout, token }) => {
       const data = await apiService.getTools();
       setTools(data.tools || data);
     } catch (error) {
+      if (error.isServerDown) {
+        toast.error("Server down");
+      }
       console.error("Failed to fetch tools", error);
     }
   };
@@ -36,7 +39,11 @@ const Tools = ({ user, logout, token }) => {
       setToolResult(data);
       toast.success("Tool executed successfully");
     } catch (error) {
-      toast.error(error.message || "Tool execution failed");
+      if (error.isServerDown) {
+        toast.error("Server down");
+      } else {
+        toast.error(error.message || "Tool execution failed");
+      }
     }
   };
 
@@ -48,7 +55,7 @@ const Tools = ({ user, logout, token }) => {
 
   return (
     <div className="flex min-h-screen bg-void text-white">
-      <Sidebar user={user} logout={logout} />
+      <Sidebar user={user} logout={logout} openAuthDialog={openAuthDialog} />
 
       <div className="flex-1 p-8">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>

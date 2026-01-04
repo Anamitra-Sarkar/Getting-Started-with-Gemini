@@ -15,6 +15,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 function App() {
   const [token, setToken] = useState(localStorage.getItem("vaelis_token"));
   const [user, setUser] = useState(null);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -33,13 +34,18 @@ function App() {
       setUser(data);
     } catch (error) {
       console.error("Failed to fetch user", error);
-      setToken(null);
+      // Don't clear token on fetch failure - backend might be down
+      // setToken(null);
     }
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
+  };
+
+  const openAuthDialog = () => {
+    setShowAuthDialog(true);
   };
 
   return (
@@ -56,46 +62,31 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              token ? (
-                <Dashboard user={user} logout={logout} token={token} />
-              ) : (
-                <Navigate to="/auth" />
-              )
+              <Dashboard user={user} logout={logout} token={token} openAuthDialog={openAuthDialog} />
             }
           />
           <Route
             path="/agents"
             element={
-              token ? (
-                <Agents user={user} logout={logout} token={token} />
-              ) : (
-                <Navigate to="/auth" />
-              )
+              <Agents user={user} logout={logout} token={token} openAuthDialog={openAuthDialog} />
             }
           />
           <Route
             path="/tools"
             element={
-              token ? (
-                <Tools user={user} logout={logout} token={token} />
-              ) : (
-                <Navigate to="/auth" />
-              )
+              <Tools user={user} logout={logout} token={token} openAuthDialog={openAuthDialog} />
             }
           />
           <Route
             path="/intelligence"
             element={
-              token ? (
-                <Intelligence user={user} logout={logout} token={token} />
-              ) : (
-                <Navigate to="/auth" />
-              )
+              <Intelligence user={user} logout={logout} token={token} openAuthDialog={openAuthDialog} />
             }
           />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
+      {showAuthDialog && <Auth setToken={setToken} onClose={() => setShowAuthDialog(false)} isDialog={true} />}
     </div>
   );
 }

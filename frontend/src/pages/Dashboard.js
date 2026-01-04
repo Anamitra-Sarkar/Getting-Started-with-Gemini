@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import apiService from "../services/api";
+import { toast } from "sonner";
 import {
   Activity,
   Zap,
@@ -12,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const Dashboard = ({ user, logout, token }) => {
+const Dashboard = ({ user, logout, token, openAuthDialog }) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     agents: 0,
@@ -30,6 +31,9 @@ const Dashboard = ({ user, logout, token }) => {
       const data = await apiService.getDashboardStats();
       setStats(data);
     } catch (error) {
+      if (error.isServerDown) {
+        toast.error("Server down");
+      }
       console.error("Failed to fetch stats", error);
     }
   };
@@ -63,7 +67,7 @@ const Dashboard = ({ user, logout, token }) => {
 
   return (
     <div className="flex min-h-screen bg-void text-white">
-      <Sidebar user={user} logout={logout} />
+      <Sidebar user={user} logout={logout} openAuthDialog={openAuthDialog} />
 
       <div className="flex-1 p-8">
         <motion.div

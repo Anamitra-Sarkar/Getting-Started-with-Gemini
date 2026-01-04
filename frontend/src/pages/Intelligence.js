@@ -5,7 +5,7 @@ import apiService from "../services/api";
 import { Brain, Send, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 
-const Intelligence = ({ user, logout, token }) => {
+const Intelligence = ({ user, logout, token, openAuthDialog }) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,11 @@ const Intelligence = ({ user, logout, token }) => {
       const aiMessage = { role: "assistant", content: data.output || data.analysis || "Analysis complete." };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      toast.error("Analysis failed");
+      if (error.isServerDown) {
+        toast.error("Server down");
+      } else {
+        toast.error("Analysis failed");
+      }
       const errorMessage = {
         role: "assistant",
         content: "I apologize, but I encountered an error processing your request.",
@@ -46,7 +50,7 @@ const Intelligence = ({ user, logout, token }) => {
 
   return (
     <div className="flex min-h-screen bg-void text-white">
-      <Sidebar user={user} logout={logout} />
+      <Sidebar user={user} logout={logout} openAuthDialog={openAuthDialog} />
 
       <div className="flex-1 flex flex-col">
         <div className="p-8 border-b border-white/10">

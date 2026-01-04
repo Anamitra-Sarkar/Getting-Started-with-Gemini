@@ -31,6 +31,10 @@ class RegisterRequest(BaseModel):
     name: str
 
 
+class GoogleAuthRequest(BaseModel):
+    token: str
+
+
 class AuthResponse(BaseModel):
     token: str
     user: dict
@@ -118,3 +122,52 @@ def login(body: LoginRequest):
                 "credits": account.credits
             }
         }
+
+
+@router.post("/google", response_model=AuthResponse)
+def google_auth(body: GoogleAuthRequest):
+    """Google OAuth authentication - simplified for development"""
+    try:
+        # In production, you would verify the Google token here
+        # For development, we'll extract a fake email from the token
+        # This is just a placeholder - real implementation would use Google's API
+        
+        # For development, just create/login user with a Google-based email
+        google_email = "google.user@example.com"  # Placeholder
+        google_name = "Google User"  # Placeholder
+        
+        with Session(engine) as session:
+            # Check if user exists
+            account = session.exec(
+                select(Account).where(Account.user_id == google_email).limit(1)
+            ).first()
+            
+            # Create account if it doesn't exist
+            if not account:
+                account = Account(
+                    user_id=google_email,
+                    credits=100.0,
+                    role="member"
+                )
+                session.add(account)
+                session.commit()
+                session.refresh(account)
+            
+            # Create token
+            token = create_access_token({
+                "uid": google_email,
+                "email": google_email,
+                "name": google_name
+            })
+            
+            return {
+                "token": token,
+                "user": {
+                    "uid": google_email,
+                    "email": google_email,
+                    "name": google_name,
+                    "credits": account.credits
+                }
+            }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Google authentication failed")
