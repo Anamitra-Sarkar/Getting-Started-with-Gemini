@@ -5,6 +5,7 @@ from typing import Optional, List
 from ..models import engine, IntentAnalysis, BiasDetection, DecisionAnalysis
 from ..auth.firebase import firebase_auth_required
 from ..ai.service import ai_service
+from ..utils.ai_helpers import check_ai_response
 import json
 
 router = APIRouter(prefix="/intelligence", tags=["intelligence"])
@@ -44,6 +45,7 @@ Text: {body.text}
 Respond in JSON format."""
         
         result = await ai_service.generate(prompt=prompt, mode="think")
+        check_ai_response(result, "Intent detection")
         
         # Parse the result (simplified - real implementation would be more robust)
         try:
@@ -77,6 +79,8 @@ Respond in JSON format."""
             "suggestions": analysis.get("suggestions", []),
             "analysis_id": intent_record.id
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Intent detection failed: {str(e)}")
 
