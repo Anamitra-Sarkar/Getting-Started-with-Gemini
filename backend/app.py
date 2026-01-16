@@ -53,6 +53,11 @@ from .routes.export import router as export_router
 from .utils.rate_limit import require_rate_limit
 from .utils.validation import validate_memory_payload, validate_project_payload, validate_task_payload, require_str_field
 
+# MongoDB imports
+from .db_mongo import init_db as init_mongo_db, close_db as close_mongo_db, health_check as mongo_health_check
+from .models_agent import Agent as MongoAgent
+from .routes.agents_mongo import router as agents_mongo_router
+
 LOG_LEVEL = os.getenv("LOG_LEVEL", "info").upper()
 logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger("backend")
@@ -65,7 +70,20 @@ app = FastAPI(title="Vaelis Backend")
 async def http_exception_handler(request: Request, exc: fastapi.HTTPException):
     # Return structured JSON for HTTP errors
     detail = exc.detail if isinstance(exc.detail, (str, dict)) else str(exc.detail)
-    payload = {"error": "http_error", "status_code": exc.status_code, "message": detail}
+    
+    # Handle dict details (already structured)
+    if isinstance(detail, dict):
+        payload = detail
+        if "ok" not in payload:
+            payload["ok"] = False
+    else:
+        # Handle string details
+        payload = {"ok": False, "error": "http_error", "status_code": exc.status_code, "message": detail}
+    
+    # Add specific message for 401 errors if not present
+    if exc.status_code == 401 and "message" not in payload:
+        payload["message"] = "Authorization required"
+    
     return fastapi.responses.JSONResponse(status_code=exc.status_code, content=payload)
 
 
@@ -73,7 +91,7 @@ async def http_exception_handler(request: Request, exc: fastapi.HTTPException):
 async def generic_exception_handler(request: Request, exc: Exception):
     # Generic handler to avoid leaking internals
     logger.exception("Unhandled exception: %s", exc)
-    payload = {"error": "internal_server_error", "message": "An internal error occurred"}
+    payload = {"ok": False, "error": "internal_server_error", "message": "An internal error occurred"}
     return fastapi.responses.JSONResponse(status_code=500, content=payload)
 
 # include scaffolding routers
@@ -89,6 +107,7 @@ app.include_router(admin_router)
 
 # include feature routers
 app.include_router(agents_router)
+app.include_router(agents_mongo_router)  # MongoDB-based agents router
 app.include_router(tools_router)
 app.include_router(intelligence_router)
 app.include_router(markets_router)
@@ -102,19 +121,45 @@ app.include_router(web_router)
 # security headers
 app.add_middleware(SecurityHeadersMiddleware)
 
+# CORS configuration - read comma-separated list from env
+frontend_origins_str = os.getenv("FRONTEND_ORIGINS", "*")
+if frontend_origins_str == "*":
+    allow_origins = ["*"]
+else:
+    allow_origins = [origin.strip() for origin in frontend_origins_str.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_ORIGINS", "*")],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"],  # This allows Authorization header
 )
 
 
 @app.on_event("startup")
-def startup():
+async def startup():
     init_db()
-    logger.info("DB initialized")
+    logger.info("SQL DB initialized")
+    
+    # Initialize MongoDB if MONGODB_URI is available
+    mongodb_uri = os.getenv("MONGODB_URI")
+    if mongodb_uri:
+        try:
+            await init_mongo_db(document_models=[MongoAgent])
+            logger.info("MongoDB / Beanie initialized")
+        except Exception as e:
+            logger.exception(f"Failed to initialize MongoDB: {e}")
+            # Don't fail startup if MongoDB is unavailable - allow SQL fallback
+    else:
+        logger.warning("MONGODB_URI not set - MongoDB features disabled")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Gracefully close database connections on shutdown."""
+    await close_mongo_db()
+    logger.info("Shutdown complete")
 
 
 @app.get("/")
@@ -129,8 +174,42 @@ def root():
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok"}
+async def health():
+    """
+    Health check endpoint that verifies database connectivity.
+    Returns 200 if healthy, 503 if database is unreachable.
+    """
+    response = {
+        "status": "ok",
+        "sql_db": "connected",
+        "mongo_db": "not_configured"
+    }
+    
+    # Check MongoDB health if configured
+    mongodb_uri = os.getenv("MONGODB_URI")
+    if mongodb_uri:
+        try:
+            mongo_healthy = await mongo_health_check()
+            if mongo_healthy:
+                response["mongo_db"] = "connected"
+            else:
+                response["mongo_db"] = "unreachable"
+                response["status"] = "degraded"
+                logger.error("MongoDB health check failed")
+                return fastapi.responses.JSONResponse(
+                    status_code=503,
+                    content=response
+                )
+        except Exception as e:
+            logger.exception(f"MongoDB health check error: {e}")
+            response["mongo_db"] = "error"
+            response["status"] = "degraded"
+            return fastapi.responses.JSONResponse(
+                status_code=503,
+                content=response
+            )
+    
+    return response
 
 
 @app.post("/ai/generate")
@@ -139,28 +218,48 @@ async def generate(payload: dict, response: fastapi.Response, user=Depends(fireb
     mode = payload.get("mode", "chat")
     prompt = payload.get("prompt")
     if not prompt or not isinstance(prompt, str):
-        raise HTTPException(status_code=400, detail="prompt required and must be a string")
+        raise HTTPException(status_code=400, detail={"ok": False, "error": "prompt required and must be a string"})
     if mode not in ("chat", "think", "study", "build"):
         # allow-list modes and normalize unknowns to chat
         mode = "chat"
     # rate limit check
-    require_rate_limit(request=None, uid=user["uid"])  # request not used in simple limiter
-    # surface a minimal header so clients can introspect that a rate-check occurred
     try:
+        require_rate_limit(request=None, uid=user["uid"])  # request not used in simple limiter
         response.headers["X-RateLimit-Checked"] = "1"
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Rate limit check issue: {e}")
         pass
+    
     # optional search
     sources = None
     if payload.get("use_search"):
         q = payload.get("search_query") or prompt
         try:
             sources = await tavily_search(q)
-        except Exception:
-            logger.exception("tavily search failed")
+        except Exception as e:
+            logger.exception(f"Tavily search failed for query '{q}': {e}")
             sources = None
-    # call AI core
-    res = await ai_service.generate(prompt=prompt, mode=mode, sources=sources)
+    
+    # call AI core with error handling
+    try:
+        res = await ai_service.generate(prompt=prompt, mode=mode, sources=sources)
+        
+        # Check if AI service returned an error
+        if res.get("status") == "error":
+            logger.error(f"AI service error: {res.get('error')} - {res.get('output')}")
+            raise HTTPException(
+                status_code=502,
+                detail={"ok": False, "error": res.get("error", "ai_service_error"), "message": res.get("output")}
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"AI generation failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "error": "Internal server error", "message": "Failed to generate AI response"}
+        )
+    
     # persist conversation metadata; support appending to existing conversation
     conv_id = payload.get("conv_id")
     try:
@@ -184,8 +283,9 @@ async def generate(payload: dict, response: fastapi.Response, user=Depends(fireb
             session.commit()
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("failed to persist conversation")
+    except Exception as e:
+        logger.exception(f"Failed to persist conversation: {e}")
+    
     out = res.copy() if isinstance(res, dict) else {"output": str(res)}
     try:
         out["conv_id"] = conv.id
