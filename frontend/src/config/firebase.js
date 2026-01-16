@@ -14,9 +14,7 @@ let app = null;
 let auth = null;
 
 // Check if Firebase config is available
-const isFirebaseConfigured = firebaseConfig.apiKey && 
-                              firebaseConfig.authDomain && 
-                              firebaseConfig.projectId;
+const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean);
 
 if (isFirebaseConfigured) {
   try {

@@ -105,12 +105,17 @@ const Auth = ({ setToken, onClose, isDialog }) => {
         toast.success(`Welcome ${isLogin ? 'back' : 'to Vaelis'}!`);
         if (isDialog && onClose) onClose();
       } else {
-        toast.error(data.detail || "Authentication failed");
-        throw new Error(data.detail || "Authentication failed");
+        const errorMessage = data.detail || "Authentication failed";
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
-      if (error.message !== "Authentication failed") {
+      // Only show server down error if it's a network error
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
         toast.error("Server down");
+      } else if (!error.message.includes("Authentication failed") && !error.message.includes("detail")) {
+        // Show generic error for unexpected errors
+        toast.error("An unexpected error occurred");
       }
       throw error;
     }
