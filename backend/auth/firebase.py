@@ -51,7 +51,10 @@ def verify_firebase_token(id_token: str) -> Dict[str, Any]:
     """
     init_firebase()
     if firebase_auth is None:
-        raise HTTPException(status_code=500, detail="Authentication service not available")
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "error": "Authentication service not available", "message": "Firebase authentication is not configured"}
+        )
 
     # cache lookup
     import time
@@ -64,7 +67,10 @@ def verify_firebase_token(id_token: str) -> Dict[str, Any]:
     try:
         decoded = firebase_auth.verify_id_token(id_token)
     except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired authentication token")
+        raise HTTPException(
+            status_code=401,
+            detail={"ok": False, "error": "Invalid or expired authentication token", "message": "Your session has expired. Please log in again."}
+        )
 
     # cache decoded token
     try:
@@ -78,7 +84,10 @@ def firebase_auth_required(request: Request):
     """Unified auth dependency that supports both Firebase and JWT tokens"""
     auth = request.headers.get("Authorization")
     if not auth or not auth.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization header missing")
+        raise HTTPException(
+            status_code=401,
+            detail={"ok": False, "error": "Authorization header missing or invalid", "message": "Please provide a valid Bearer token"}
+        )
     token = auth.split(" ", 1)[1]
     
     # First try JWT (simple auth)

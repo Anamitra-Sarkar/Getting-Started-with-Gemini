@@ -357,3 +357,265 @@ npm run dev
 - [ ] Frontend can communicate with backend API
 - [ ] Authentication flow works (if applicable)
 - [ ] No console errors in browser developer tools
+
+---
+
+## MongoDB Atlas Integration
+
+### Overview
+
+The application now supports MongoDB Atlas for persistent storage using Motor (async MongoDB driver) and Beanie (async ODM). This is in addition to the existing SQLite/SQL database support.
+
+### MongoDB Atlas Setup
+
+#### 1. Create MongoDB Atlas Cluster
+
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a free M0 cluster (sufficient for development/testing)
+3. Choose cloud provider and region closest to your Render deployment
+4. Wait for cluster provisioning
+
+#### 2. Configure Network Access
+
+1. Navigate to **Network Access** in Atlas dashboard
+2. Click **Add IP Address**
+3. Select **Allow Access from Anywhere** (0.0.0.0/0) for Render
+   - Note: For production, consider restricting to specific IP ranges
+4. Save changes
+
+#### 3. Create Database User
+
+1. Go to **Database Access** → **Add New Database User**
+2. Select **Password** authentication method
+3. Create username and strong password
+4. Assign **Read and write to any database** role
+5. Save user
+
+#### 4. Get Connection String
+
+1. Click **Connect** on your cluster
+2. Choose **Connect your application**
+3. Select **Driver: Python 3.12+**
+4. Copy the connection string:
+   ```
+   mongodb+srv://username:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   ```
+5. Replace `<password>` with your actual database password
+6. Optionally specify database name:
+   ```
+   mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/vaelis?retryWrites=true&w=majority
+   ```
+
+#### 5. Production-Ready Connection String
+
+For production deployments with multiple instances:
+```
+mongodb+srv://username:password@cluster.mongodb.net/vaelis?retryWrites=true&w=majority&maxPoolSize=50&serverSelectionTimeoutMS=5000
+```
+
+Parameters explained:
+- `maxPoolSize=50`: Allows up to 50 concurrent connections per instance
+- `serverSelectionTimeoutMS=5000`: 5 second timeout for server selection
+- `retryWrites=true`: Automatically retry failed write operations
+- `w=majority`: Ensures writes are acknowledged by majority of replica set
+
+### Render Environment Variables for MongoDB
+
+Add these environment variables in Render dashboard:
+
+```bash
+# MongoDB Atlas (Required for MongoDB features)
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/vaelis?retryWrites=true&w=majority&maxPoolSize=50
+
+# Existing variables (keep these)
+PYTHONPATH=.
+FRONTEND_ORIGINS=https://your-frontend-url.vercel.app,http://localhost:3000
+LOG_LEVEL=INFO
+GEMINI_API_KEY=your_gemini_api_key
+JWT_SECRET_KEY=your_jwt_secret_here
+
+# Optional: File upload size limit
+MAX_UPLOAD_SIZE_MB=10
+```
+
+### MongoDB Features
+
+#### Health Check Endpoint
+
+The `/health` endpoint now checks MongoDB connectivity:
+
+```bash
+curl https://your-backend.onrender.com/health
+```
+
+Response when MongoDB is connected:
+```json
+{
+  "status": "ok",
+  "sql_db": "connected",
+  "mongo_db": "connected"
+}
+```
+
+Response when MongoDB is unavailable:
+```json
+{
+  "status": "degraded",
+  "sql_db": "connected",
+  "mongo_db": "unreachable"
+}
+```
+
+#### MongoDB-Based Agents Router
+
+New endpoint: `/agents-mongo/`
+
+This provides MongoDB-backed agent persistence with the following features:
+- Async operations using Motor and Beanie
+- MongoDB ObjectId support
+- Compound indexes for efficient queries
+- Owner-based access control
+
+Endpoints:
+- `GET /agents-mongo/stats` - Dashboard statistics
+- `POST /agents-mongo/` - Create agent
+- `GET /agents-mongo/` - List user's agents
+- `GET /agents-mongo/{agent_id}` - Get agent by ID
+- `PUT /agents-mongo/{agent_id}` - Update agent
+- `PATCH /agents-mongo/{agent_id}` - Partial update agent
+- `DELETE /agents-mongo/{agent_id}` - Delete agent
+
+### Testing MongoDB Integration
+
+#### 1. Verify MongoDB Connection
+
+Check Render logs for startup message:
+```
+MongoDB / Beanie initialized
+```
+
+#### 2. Test Health Endpoint
+
+```bash
+curl https://your-backend.onrender.com/health
+```
+
+#### 3. Test Agent Creation
+
+Using curl:
+```bash
+curl -X POST https://your-backend.onrender.com/agents-mongo/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Test Agent", "description": "Testing MongoDB"}'
+```
+
+#### 4. Verify Persistence
+
+1. Create an agent via API or frontend
+2. Restart the Render service
+3. List agents - should still exist
+
+### Troubleshooting MongoDB Issues
+
+#### Issue: "MONGODB_URI not set"
+
+**Solution**: Add `MONGODB_URI` environment variable in Render dashboard
+
+#### Issue: "mongo_db: unreachable"
+
+**Causes and solutions**:
+1. **Network access**: Verify 0.0.0.0/0 is allowed in Atlas Network Access
+2. **Credentials**: Check username/password in connection string
+3. **Connection string format**: Ensure proper URL encoding of special characters
+4. **Cluster status**: Verify cluster is running in Atlas dashboard
+
+#### Issue: "Authentication failed"
+
+**Solution**: 
+1. Verify database user exists in Atlas
+2. Check password in connection string (URL encode special characters)
+3. Ensure user has correct permissions
+
+#### Issue: Slow startup
+
+**Solution**: Add `serverSelectionTimeoutMS=5000` to connection string
+
+### MongoDB Atlas Monitoring
+
+1. Go to Atlas cluster dashboard
+2. Click **Metrics** tab
+3. Monitor:
+   - **Connections**: Should be < maxPoolSize per instance
+   - **Operations**: Read/write operations per second
+   - **Network**: Data transfer
+   - **Storage**: Database size
+
+### Data Migration (SQL to MongoDB)
+
+If migrating existing data from SQL to MongoDB:
+
+1. Create migration script in `tools/migrations/`
+2. Set environment variables:
+   ```bash
+   MONGODB_URI=your_atlas_uri
+   LEGACY_DATABASE_URL=sqlite:///./backend_data.db
+   ```
+3. Run migration:
+   ```bash
+   python tools/migrations/sql_to_mongo.py
+   ```
+
+Note: This is optional - the app supports both SQL and MongoDB concurrently.
+
+### CORS Configuration Enhancement
+
+The CORS middleware now properly handles comma-separated origins:
+
+```python
+# In Render, set:
+FRONTEND_ORIGINS=https://app.example.com,https://admin.example.com,http://localhost:3000
+```
+
+This allows multiple frontend origins for:
+- Production frontend
+- Admin dashboard
+- Local development
+
+### Security Considerations for MongoDB
+
+1. **Never commit connection strings** - Use environment variables only
+2. **Use strong passwords** - Generate with password manager
+3. **Restrict network access** - Use specific IP ranges when possible
+4. **Monitor access logs** - Review in Atlas Security → Access Manager
+5. **Enable encryption** - Atlas encrypts data at rest by default
+6. **Rotate credentials periodically** - Update database user passwords
+7. **Use Secret Files for sensitive data** - Firebase JSON via Render Secret Files
+
+### Scaling with MongoDB
+
+#### Horizontal Scaling
+
+- Render auto-scaling on paid plans
+- Increase `maxPoolSize` in connection string
+- Monitor connection count in Atlas
+
+#### Vertical Scaling
+
+- Upgrade MongoDB Atlas cluster tier (M10, M20, M30, etc.)
+- More RAM and CPU for complex queries
+- Dedicated clusters for production
+
+#### Read Replicas
+
+- Available on M10+ clusters
+- Distribute read load across replicas
+- Specify in connection string for read preference
+
+### MongoDB Best Practices
+
+1. **Indexes**: Agent model has indexes on `owner_id` and compound `(owner_id, name)`
+2. **Connection pooling**: `maxPoolSize` set appropriately for instance count
+3. **Timeouts**: `serverSelectionTimeoutMS` prevents hanging on startup
+4. **Error handling**: All MongoDB operations wrapped in try/except with logging
+5. **Async operations**: Uses Motor for async I/O, no blocking operations

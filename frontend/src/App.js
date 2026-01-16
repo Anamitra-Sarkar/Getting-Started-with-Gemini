@@ -4,7 +4,6 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
-import Tools from "./pages/Tools";
 import Intelligence from "./pages/Intelligence";
 import { Toaster } from "./components/ui/sonner";
 import apiService from "./services/api";
@@ -67,12 +66,6 @@ function App() {
             path="/agents"
             element={
               <Agents user={user} logout={logout} token={token} openAuthDialog={openAuthDialog} />
-            }
-          />
-          <Route
-            path="/tools"
-            element={
-              <Tools user={user} logout={logout} token={token} openAuthDialog={openAuthDialog} />
             }
           />
           <Route

@@ -19,30 +19,49 @@ class APIService {
       ...options.headers,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Always try to get token from localStorage if not set in memory
+    // This ensures consistency even if setToken wasn't called
+    const token = this.token || localStorage.getItem('vaelis_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     try {
       const response = await fetch(url, {
         ...options,
         headers,
+        credentials: 'include',  // Support cookie-based auth flows
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Request failed' }));
-        throw new Error(error.message || `HTTP ${response.status}`);
+        // Parse error response - handle new backend format with "ok": false
+        const error = await response.json().catch(() => ({ 
+          ok: false,
+          error: 'request_failed',
+          message: `HTTP ${response.status}` 
+        }));
+        
+        // Create a detailed error object
+        const errorObj = new Error(error.message || error.error || `HTTP ${response.status}`);
+        errorObj.status = response.status;
+        errorObj.ok = error.ok !== undefined ? error.ok : false;
+        errorObj.errorCode = error.error;
+        errorObj.details = error;
+        
+        throw errorObj;
       }
 
       return await response.json();
     } catch (error) {
       console.error(`API Error [${endpoint}]:`, error);
+      
       // Check if it's a network error (server down) - be specific about TypeError
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         const serverDownError = new Error('Server down');
         serverDownError.isServerDown = true;
         throw serverDownError;
       }
+      
       throw error;
     }
   }
@@ -570,18 +589,22 @@ class APIService {
     const url = `${this.baseURL}/assets/upload`;
     const headers = {};
     
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Always try to get token from localStorage if not set in memory
+    const token = this.token || localStorage.getItem('vaelis_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: formData,
+      credentials: 'include',  // Support cookie-based auth
     });
 
     if (!response.ok) {
-      throw new Error('Upload failed');
+      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(error.message || error.error || 'Upload failed');
     }
 
     return await response.json();
