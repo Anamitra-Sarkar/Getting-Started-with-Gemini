@@ -1,5 +1,6 @@
 // Comprehensive API Service for Vaelis AI
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+// Use environment variable if defined, otherwise fallback to production backend
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://getting-started-with-gemini.onrender.com';
 
 class APIService {
   constructor() {

@@ -10,8 +10,6 @@ import { Toaster } from "./components/ui/sonner";
 import apiService from "./services/api";
 import "./App.css";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-
 function App() {
   const [token, setToken] = useState(localStorage.getItem("vaelis_token"));
   const [user, setUser] = useState(null);

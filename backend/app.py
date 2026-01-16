@@ -117,6 +117,17 @@ def startup():
     logger.info("DB initialized")
 
 
+@app.get("/")
+def root():
+    """Root endpoint - provides basic API information"""
+    return {
+        "service": "Vaelis Backend",
+        "status": "running",
+        "version": "1.0.0",
+        "health_check": "/health"
+    }
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
