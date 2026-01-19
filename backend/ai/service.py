@@ -8,7 +8,7 @@ from .identity import label_response, sanitize_raw
 
 logger = logging.getLogger("backend.ai.service")
 
-GEMINI_URL = os.getenv("GEMINI_API_URL", "https://api.generativeai.example/v1")
+GEMINI_URL = os.getenv("GEMINI_API_URL", "https://api.groq.com/openai/v1")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
 
@@ -16,6 +16,7 @@ class AIService:
     def __init__(self):
         self.url = GEMINI_URL
         self.key = GEMINI_KEY
+        logger.debug(f"AIService initialized with URL: {self.url}")
 
     async def generate(self, prompt: str, mode: str = "chat", sources: Optional[Dict] = None, max_retries: int = 2) -> Dict[str, Any]:
         # Conservative check; keep env var name for compatibility but avoid exposing provider name in messages
@@ -34,19 +35,39 @@ class AIService:
         for attempt in range(max_retries + 1):
             try:
                 headers = {"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
+                # Groq uses OpenAI-compatible format
+                # Include sources in the prompt if available
+                full_prompt = prompt
+                if sources and isinstance(sources, dict) and sources.get("items"):
+                    source_text = "\n".join([f"- {s.get('title', 'Source')}: {s.get('url', '')}\n  Snippet: {s.get('snippet', '')}" for s in sources["items"]])
+                    full_prompt = f"Use the following sources to answer the prompt:\n{prompt}\n\nSources:\n{source_text}"
+
                 body = {
-                    "model": "gemini-2.0-flash",
-                    "mode": mode,
-                    "prompt": prompt,
-                    "sources": sources or [],
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": f"You are a helpful assistant. Mode: {mode}"},
+                        {"role": "user", "content": full_prompt}
+                    ],
+                    "temperature": 0.7,
                 }
+                
+                logger.debug(f"Calling Groq API at {self.url}/chat/completions (Attempt {attempt + 1})")
+                
                 async with httpx.AsyncClient(timeout=60.0) as client:
-                    r = await client.post(f"{self.url}/generate", json=body, headers=headers)
+                    r = await client.post(f"{self.url}/chat/completions", json=body, headers=headers)
                     r.raise_for_status()
                     out = r.json()
-                    # Normalize the returned structure and remove provider/internal metadata before returning
-                    text = out.get("text") if isinstance(out, dict) else out
-                    return label_response(text or str(out), sources=sources, raw=out)
+                    
+                    logger.info("Groq API connection successful")
+                    
+                    # Extract text from Groq response (OpenAI format)
+                    choices = out.get("choices", [])
+                    if choices:
+                        text = choices[0].get("message", {}).get("content", "")
+                    else:
+                        text = str(out)
+                    
+                    return label_response(text, sources=sources, raw=out)
                     
             except httpx.TimeoutException as e:
                 last_error = e

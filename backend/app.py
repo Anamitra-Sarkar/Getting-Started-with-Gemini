@@ -242,7 +242,9 @@ async def generate(payload: dict, response: fastapi.Response, user=Depends(fireb
     
     # call AI core with error handling
     try:
+        logger.debug(f"Calling AI service for generation: {ai_service.url}")
         res = await ai_service.generate(prompt=prompt, mode=mode, sources=sources)
+        logger.info("Groq API connection successful (generate)")
         
         # Check if AI service returned an error
         if res.get("status") == "error":
@@ -319,7 +321,24 @@ async def stream_generate(request: Request, user=Depends(firebase_auth_required)
         raise HTTPException(status_code=500, detail="AI API key not configured")
 
     headers = {"Authorization": f"Bearer {ai_key}", "Content-Type": "application/json"}
-    body = {"model": "vaelis-core", "mode": mode, "prompt": prompt, "sources": sources or []}
+    
+    # Include sources in the prompt if available
+    full_prompt = prompt
+    if sources and isinstance(sources, dict) and sources.get("items"):
+        source_text = "\n".join([f"- {s.get('title', 'Source')}: {s.get('url', '')}\n  Snippet: {s.get('snippet', '')}" for s in sources["items"]])
+        full_prompt = f"Use the following sources to answer the prompt:\n{prompt}\n\nSources:\n{source_text}"
+
+    body = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "system", "content": f"You are a helpful assistant. Mode: {mode}"},
+            {"role": "user", "content": full_prompt}
+        ],
+        "temperature": 0.7,
+        "stream": True
+    }
+
+    logger.debug(f"Starting Groq stream from {ai_url}/chat/completions")
 
     async def event_generator():
         try:
@@ -343,18 +362,27 @@ async def stream_generate(request: Request, user=Depends(firebase_auth_required)
             yield f"data: {json.dumps({'conv_id': conv.id})}\n\n"
 
             async with httpx.AsyncClient(timeout=None) as client:
-                url = f"{ai_url}/generate/stream"
+                url = f"{ai_url}/chat/completions"
                 async with client.stream("POST", url, json=body, headers=headers) as resp:
                     resp.raise_for_status()
+                    logger.info("Groq stream connection successful")
                     accum = ""
-                    async for chunk in resp.aiter_text(chunk_size=1024):
+                    async for line in resp.aiter_lines():
                         if await request.is_disconnected():
                             return
-                        if not chunk:
+                        if not line or not line.startswith("data: "):
                             continue
-                        accum += chunk
-                        data = json.dumps({"delta": chunk})
-                        yield f"data: {data}\n\n"
+                        if line == "data: [DONE]":
+                            break
+                        try:
+                            json_str = line[6:]
+                            data = json.loads(json_str)
+                            delta = data.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if delta:
+                                accum += delta
+                                yield f"data: {json.dumps({'delta': delta})}\n\n"
+                        except Exception:
+                            continue
                     # after stream completes, persist assistant final message
                     try:
                         with Session(engine) as session:
