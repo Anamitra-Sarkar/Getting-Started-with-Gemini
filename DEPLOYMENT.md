@@ -45,8 +45,9 @@ FIREBASE_PROJECT_ID=<your-firebase-project-id>
 FIREBASE_PRIVATE_KEY=<your-firebase-private-key>
 FIREBASE_CLIENT_EMAIL=<your-firebase-client-email>
 
-# Google Gemini API
-GOOGLE_API_KEY=<your-google-api-key>
+# Groq API (using GEMINI_API_KEY name for compatibility)
+GEMINI_API_KEY=<your-groq-api-key>
+GEMINI_API_URL=https://api.groq.com/openai/v1
 
 # Optional: Tavily Search API
 TAVILY_API_KEY=<your-tavily-api-key>
@@ -123,8 +124,9 @@ FIREBASE_PROJECT_ID=<your-firebase-project-id>
 FIREBASE_PRIVATE_KEY=<your-firebase-private-key>
 FIREBASE_CLIENT_EMAIL=<your-firebase-client-email>
 
-# Google Gemini API
-GOOGLE_API_KEY=<your-google-api-key>
+# Groq API (using GEMINI_API_KEY name for compatibility)
+GEMINI_API_KEY=<your-groq-api-key>
+GEMINI_API_URL=https://api.groq.com/openai/v1
 
 # Optional: Tavily Search API
 TAVILY_API_KEY=<your-tavily-api-key>
@@ -431,7 +433,8 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/vaelis?retryWrit
 PYTHONPATH=.
 FRONTEND_ORIGINS=https://your-frontend-url.vercel.app,http://localhost:3000
 LOG_LEVEL=INFO
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=your_groq_api_key
+GEMINI_API_URL=https://api.groq.com/openai/v1
 JWT_SECRET_KEY=your_jwt_secret_here
 
 # Optional: File upload size limit

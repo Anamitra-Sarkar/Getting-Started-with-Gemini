@@ -17,9 +17,9 @@ This repository upgrades the original demo into a modular, production-oriented A
 
 Requirements and environment
 - Python 3.10+ for backend; Node 18+ / npm for frontend.
-- Create a `.env` or export environment variables. Required backend vars (names kept for compatibility):
-  - `GEMINI_API_KEY` — API key for the configured AI model
-  - `GEMINI_API_URL` — AI model API base URL
+- Create a `.env` or export environment variables. Required backend vars (using GEMINI_ prefix for compatibility):
+  - `GEMINI_API_KEY` — Groq API key (starts with gsk_)
+  - `GEMINI_API_URL` — Groq API base URL (https://api.groq.com/openai/v1)
   - `TAVILY_API_KEY` — Tavily API key
   - `TAVILY_API_URL` — Tavily search endpoint
   - `FIREBASE_CREDENTIALS_JSON` — path to Firebase service account JSON for verifying tokens
@@ -27,8 +27,8 @@ Requirements and environment
 Backend quick start
 ```bash
 pip install -r requirements.txt
-export GEMINI_API_KEY="xxx"
-export GEMINI_API_URL="https://your.ai.endpoint"
+export GEMINI_API_KEY="gsk_..."
+export GEMINI_API_URL="https://api.groq.com/openai/v1"
 export TAVILY_API_KEY="yyy"
 export TAVILY_API_URL="https://api.tavily.com/search"
 export FIREBASE_CREDENTIALS_JSON="/path/to/service-account.json"
